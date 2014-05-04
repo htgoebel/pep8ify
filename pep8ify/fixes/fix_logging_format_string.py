@@ -7,6 +7,8 @@ from lib2to3 import patcomp
 from lib2to3.pygram import python_symbols as symbols
 
 import operator
+import sys
+import re
 
 
 def find_class(node):
@@ -32,7 +34,7 @@ def get_args(node):
 
 _classdef_pattern = patcomp.compile_pattern("""
 classdef<
-  'class' any '(' classes=arglist<any+> ')'
+  'class' name=any '(' (classes=any) ')'
    any*
   >
 """)
@@ -42,20 +44,37 @@ def get_superclasses(node):
     results = {}
     if not _classdef_pattern.match(node, results):
         return []
-    classes = get_args(results['classes'])
-    #print repr(list(classes))
+    classes = results['classes']
+    if classes.type == syms.arglist:
+        classes = get_args(classes)
+    else:
+        classes = [classes]
     return [str(cls).strip() for cls in classes]
 
+
+_known_logger_classes = set((
+    'log.Loggable', 'Loggable', 'Device', 'Backend',
+    'BackendItem', 'BackendStore', 'AbstractBackendStore', 'BaseTranscoder'))
+_known_non_logger_classes = set((
+    'object', 'tube.TubeConsumerMixin', 'tube.TubePublisherMixin'
+    ))
 
 def should_be_processed(node):
     # If this is not a subclass og 'log.Loggable', ignore it.
     klass = find_class(node)
     if klass is None:
         return False
-    superclasses = get_superclasses(klass)
-    if not 'log.Loggable' in superclasses:
+    superclasses = set(get_superclasses(klass))
+    superclasses -= _known_non_logger_classes
+    if not superclasses:
+        # exit early
         return False
-    return True
+    if superclasses & _known_logger_classes:
+        return True
+    results = {}
+    _classdef_pattern.match(klass, results)
+    print >> sys.stderr, 'Skipping', results['name'], tuple(superclasses)
+    return False
 
 
 class FixLoggingFormatString(BaseFix):
