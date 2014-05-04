@@ -108,7 +108,10 @@ class FixLoggingFormatString(BaseFix):
         try:
             fmt = eval(args[0].value)
         except AttributeError:
-            print repr(args[0]), dir(args[0])
+            print >> sys.stderr, "Unexpected log message:"
+            s = re.sub('(\t|\n|\s)+', ' ', str(node))
+            print >> sys.stderr, s[:70].rstrip(), '...'
+            print >> sys.stderr
             return
         a = tuple([1] * num_args)
         #print fmt, num_args, a
