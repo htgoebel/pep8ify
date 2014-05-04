@@ -105,8 +105,12 @@ class FixLoggingFormatString(BaseFix):
         args = list(get_args(results['args']))
         #print len(args), args
         num_args = len(args)-1
+        if num_args < 1:
+            # only one argument, nothing to do
+            return
+
         try:
-            fmt = eval(args[0].value)
+            fmt = args[0].value
         except AttributeError:
             print >> sys.stderr, "Unexpected log message:"
             s = re.sub('(\t|\n|\s)+', ' ', str(node))
@@ -114,31 +118,30 @@ class FixLoggingFormatString(BaseFix):
             print >> sys.stderr
             return
         a = tuple([1] * num_args)
-        #print fmt, num_args, a
 
-        # now test if the format covers all arguments
-        try:
-            operator.mod(fmt, a)
-        except Exception, e:
-            #print e
-            pass
-        else:
-            #print 'okay', node.get_lineno(), fmt
-            # format already okay, nothing to change
+        # fix the format strng
+        orig_fmt = fmt
+        fmt = self.fix_format_string(fmt, a)
+        if orig_fmt == fmt:
+            # format was already okay, nothing to change
             return
 
-        fmt = self.fix_format(fmt, a)
-        args[0].value = repr(fmt)
+        args[0].value = fmt
+        if args[0].prefix and not args[0].prefix.strip():
+            args[0].prefix = ''
         node.changed()
 
-    def fix_format(self, fmt, args):
+    def fix_format_string(self, fmt, args):
         # append ' %s' for each argument not covered
+        # Note: not simply append, but put it into the string. This
+        # keeps the quoting style (single or double).
         for i in range(20): # upper limit
             try:
-                operator.mod(fmt, args)
+                operator.mod(eval(fmt), args)
             except TypeError, e:
                 if 'not all arguments' in str(e):
-                    fmt += ' %s'
+                    #fmt += ' %s'
+                    fmt = fmt[:-1] + ' %s' + fmt[-1]
                 elif 'not enough arguments' in str(e):
                     assert i == 1
                     break
