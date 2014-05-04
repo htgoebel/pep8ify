@@ -30,7 +30,7 @@ def get_args(node):
             args.pop(0)
 
 
-_classddef_pattern = patcomp.compile_pattern("""
+_classdef_pattern = patcomp.compile_pattern("""
 classdef<
   'class' any '(' classes=arglist<any+> ')'
    any*
@@ -40,7 +40,7 @@ classdef<
 def get_superclasses(node):
     "Get the names of the super classes this class is inheriting from."
     results = {}
-    if not _classddef_pattern.match(node, results):
+    if not _classdef_pattern.match(node, results):
         return []
     classes = get_args(results['classes'])
     #print repr(list(classes))
