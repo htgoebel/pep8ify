@@ -109,6 +109,14 @@ class FixLoggingFormatString(BaseFix):
             # only one argument, nothing to do
             return
 
+        for a in args[1:]:
+            if isinstance(a, Leaf) and a.type in (token.NUMBER, token.STRING):
+                print >> sys.stderr, 'Interesting argument:'
+                print >> sys.stderr, node
+                print >> sys.stderr
+                return
+                break
+
         try:
             fmt = args[0].value
         except AttributeError:
