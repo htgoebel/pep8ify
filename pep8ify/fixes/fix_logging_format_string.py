@@ -77,6 +77,24 @@ def should_be_processed(node):
     return False
 
 
+"""
+
+logging.error("%s", a)
+
+Node(power,
+     [Leaf(1, u'logging'),
+      Node(trailer,
+           [Leaf(23, u'.'),
+            Leaf(1, u'error')]),
+      Node(trailer,
+           [Leaf(7, u'('),
+            Node(arglist,
+                 [Leaf(3, u'"%s"'),
+                  Leaf(12, u','),
+                  Leaf(1, u'a')]),
+            Leaf(8, u')')])])
+"""
+
 class FixLoggingFormatString(BaseFix):
     """
     Convert
